@@ -4,14 +4,14 @@ export function deriveProfile(metrics: Metrics): Profile {
   if (metrics.accountAgeYears >= 10) {
     return {
       name: 'The Veteran',
-      description: `${metrics.accountAgeYears} years on GitHub and counting — an account older than most of the tools built on it.`,
+      description: `${metrics.accountAgeYears} years on GitHub and counting. An account older than most of the tools built on it.`,
     }
   }
 
   if (metrics.topStarredRepo && metrics.totalStars >= 20 && metrics.topStarredRepo.stars >= metrics.totalStars * 0.6) {
     return {
       name: 'The Breakout Hit',
-      description: `${metrics.topStarredRepo.name} alone accounts for most of the ${metrics.totalStars.toLocaleString('en-US')} stars earned — one idea that traveled further than the rest.`,
+      description: `${metrics.topStarredRepo.name} alone accounts for most of the ${metrics.totalStars.toLocaleString('en-US')} stars earned. One idea that traveled further than the rest.`,
     }
   }
 
@@ -22,7 +22,7 @@ export function deriveProfile(metrics: Metrics): Profile {
   ) {
     return {
       name: 'The Sprinter',
-      description: `${metrics.mostProductiveYear.count} of ${metrics.publicRepoCount} repositories were started in ${metrics.mostProductiveYear.year} alone — a single, concentrated burst.`,
+      description: `${metrics.mostProductiveYear.count} of ${metrics.publicRepoCount} repositories were started in ${metrics.mostProductiveYear.year} alone. A single, concentrated burst.`,
     }
   }
 
@@ -36,14 +36,14 @@ export function deriveProfile(metrics: Metrics): Profile {
   if (metrics.activeYearRatio >= 0.75 && metrics.accountAgeYears >= 4) {
     return {
       name: 'The Steady Hand',
-      description: `Something new started in almost every year since joining — about ${Math.round(metrics.activeYearRatio * 100)}% of the account's history has a repository to show for it.`,
+      description: `Something new started in almost every year since joining. About ${Math.round(metrics.activeYearRatio * 100)}% of the account's history has a repository to show for it.`,
     }
   }
 
   if (metrics.totalForks >= 50 && metrics.totalForks >= metrics.totalStars * 0.3) {
     return {
       name: 'The Community Favorite',
-      description: `${metrics.totalForks.toLocaleString('en-US')} forks across public repositories — code other people actually picked up and ran with.`,
+      description: `${metrics.totalForks.toLocaleString('en-US')} forks across public repositories. Code other people actually picked up and ran with.`,
     }
   }
 
@@ -56,6 +56,6 @@ export function deriveProfile(metrics: Metrics): Profile {
 
   return {
     name: 'The Long Game',
-    description: `${metrics.accountAgeYears} years, ${metrics.publicRepoCount} repositories, ${metrics.totalStars.toLocaleString('en-US')} stars — steady, unhurried progress.`,
+    description: `${metrics.accountAgeYears} years, ${metrics.publicRepoCount} repositories, ${metrics.totalStars.toLocaleString('en-US')} stars. Steady, unhurried progress.`,
   }
 }

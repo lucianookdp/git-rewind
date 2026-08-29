@@ -51,7 +51,7 @@ function mountEntry(options: { prefill?: string; errorMessage?: string } = {}): 
   content.append(
     el('div', { class: 'entry__brand' }, [logo, el('h1', { class: 'entry__title' }, ['git-rewind'])]),
     el('p', { class: 'entry__subtitle' }, [
-      "Type a GitHub username. The whole public history of the account — first repository to now — turned into something you can watch and send.",
+      'Type a GitHub username. The whole public history of the account, first repository to now, turned into something you can watch and send.',
     ]),
   )
 

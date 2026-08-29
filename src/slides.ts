@@ -30,7 +30,7 @@ interface StatEntry {
 }
 
 // Split into create + activate so a row of stats can all be appended to the
-// grid first, and only then measured for font-fit — fitting one number
+// grid first, and only then measured for font-fit. Fitting one number
 // before its siblings exist would measure against a column width the grid
 // hasn't finished dividing up yet.
 function createStat(root: HTMLElement, value: string, caption: string, delay: number): StatEntry {
@@ -90,7 +90,7 @@ export function buildSlides(): SlideDef[] {
         fadeInUp(caption, 500)
       },
     },
-    // 2. Origin — the first repository
+    // 2. Origin: the first repository
     {
       announce: 'Where it started',
       autoAdvance: true,
@@ -110,7 +110,7 @@ export function buildSlides(): SlideDef[] {
         fadeInUp(caption, 500)
       },
     },
-    // 3. Repos, stars, forks — lifetime totals
+    // 3. Repos, stars, forks: lifetime totals
     {
       announce: 'Repositories, stars, and forks',
       autoAdvance: true,
@@ -125,14 +125,14 @@ export function buildSlides(): SlideDef[] {
         ].forEach(activateStat)
         if (!metrics.repoSampleIsComplete) {
           const note = el('p', { class: 'footnote' }, [
-            'Based on the oldest 200 public repositories — the account has more than that.',
+            'Based on the oldest 200 public repositories. The account has more than that.',
           ])
           root.append(note)
           fadeInUp(note, 900)
         }
       },
     },
-    // 4. Primary language — the palette flip
+    // 4. Primary language: the palette flip
     {
       announce: 'Primary language',
       autoAdvance: true,
@@ -165,7 +165,7 @@ export function buildSlides(): SlideDef[] {
         if (top) stat(root, String(top.stars), 'stars', 400)
       },
     },
-    // 6. Timeline — repositories created per year
+    // 6. Timeline: repositories created per year
     {
       announce: 'Repositories over the years',
       autoAdvance: true,
@@ -243,44 +243,60 @@ export function buildSlides(): SlideDef[] {
         const wrap = el('div', { class: 'final' })
         root.append(wrap)
         const status = el('div', { class: 'final__status', role: 'status' }, [''])
-        const actions = el('div', { class: 'final__actions' }, [
-          el('button', { class: 'final__button final__button--primary', type: 'button' }, ['Download PNG']),
-          el('button', { class: 'final__button', type: 'button' }, ['Copy link']),
+        const downloadBtn = el('button', { class: 'final__button final__button--primary', type: 'button' }, [
+          'Download PNG',
         ])
+        const copyBtn = el('button', { class: 'final__button', type: 'button' }, ['Copy link'])
+        const actions = el('div', { class: 'final__actions' }, [downloadBtn, copyBtn])
         const restart = el('button', { class: 'final__restart', type: 'button' }, ['Rewind someone else'])
         restart.addEventListener('click', (event) => {
           event.stopPropagation()
           onRestart()
         })
         wrap.append(status, actions, restart)
+        status.textContent = 'Preparing your card.'
 
-        renderShareCard(user, metrics, profile, getComputedAccent()).then((canvas) => {
-          wrap.prepend(canvas)
+        // Buttons are wired up immediately, before the card image exists,
+        // so a tap never goes silent while the avatar or fonts are still
+        // loading. Copy Link never needed the canvas anyway.
+        let readyCanvas: HTMLCanvasElement | null = null
 
-          const [downloadBtn, copyBtn] = Array.from(actions.children) as HTMLButtonElement[]
-          downloadBtn.addEventListener('click', (event) => {
-            event.stopPropagation()
-            canvas.toBlob((blob) => {
-              if (!blob) return
-              const url = URL.createObjectURL(blob)
-              const link = el('a', { href: url, download: `git-rewind-${login}.png` })
-              link.click()
-              URL.revokeObjectURL(url)
-              status.textContent = 'Image downloaded.'
-            }, 'image/png')
-          })
-
-          copyBtn.addEventListener('click', async (event) => {
-            event.stopPropagation()
-            const shareUrl = `${location.origin}${location.pathname}?u=${encodeURIComponent(login)}`
-            try {
-              await navigator.clipboard.writeText(shareUrl)
-              status.textContent = 'Link copied to clipboard.'
-            } catch {
-              status.textContent = shareUrl
-            }
-          })
+        downloadBtn.addEventListener('click', (event) => {
+          event.stopPropagation()
+          if (!readyCanvas) {
+            status.textContent = 'Still preparing the image, one moment.'
+            return
+          }
+          readyCanvas.toBlob((blob) => {
+            if (!blob) return
+            const url = URL.createObjectURL(blob)
+            const link = el('a', { href: url, download: `git-rewind-${login}.png` })
+            link.click()
+            URL.revokeObjectURL(url)
+            status.textContent = 'Image downloaded.'
+          }, 'image/png')
         })
+
+        copyBtn.addEventListener('click', async (event) => {
+          event.stopPropagation()
+          const shareUrl = `${location.origin}${location.pathname}?u=${encodeURIComponent(login)}`
+          try {
+            await navigator.clipboard.writeText(shareUrl)
+            status.textContent = 'Link copied to clipboard.'
+          } catch {
+            status.textContent = shareUrl
+          }
+        })
+
+        renderShareCard(user, metrics, profile, getComputedAccent())
+          .then((canvas) => {
+            readyCanvas = canvas
+            wrap.prepend(canvas)
+            status.textContent = ''
+          })
+          .catch(() => {
+            status.textContent = 'Could not prepare the card image. Copying the link still works.'
+          })
       },
     },
   ]

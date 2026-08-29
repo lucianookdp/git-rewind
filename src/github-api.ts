@@ -4,6 +4,7 @@ const API_ROOT = 'https://api.github.com'
 const CACHE_PREFIX = 'git-rewind:v2:'
 const CACHE_TTL_MS = 60 * 60 * 1000
 const REPO_PAGE_LIMIT = 2
+const REQUEST_TIMEOUT_MS = 15000
 
 export class NotFoundError extends Error {
   constructor(public login: string) {
@@ -33,10 +34,27 @@ function writeCache(login: string, data: ProfileData): void {
   localStorage.setItem(cacheKey(login), JSON.stringify(data))
 }
 
+// A bounded timeout so a stalled connection leaves the loading screen for
+// a bit, not forever with no way out short of reloading the page.
 async function githubFetch(path: string): Promise<Response> {
-  const response = await fetch(`${API_ROOT}${path}`, {
-    headers: { Accept: 'application/vnd.github+json' },
-  })
+  const controller = new AbortController()
+  const timeoutId = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+
+  let response: Response
+  try {
+    response = await fetch(`${API_ROOT}${path}`, {
+      headers: { Accept: 'application/vnd.github+json' },
+      signal: controller.signal,
+    })
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new Error('The request to GitHub timed out. Check your connection and try again.')
+    }
+    throw error
+  } finally {
+    window.clearTimeout(timeoutId)
+  }
+
   if (response.status === 403) {
     const resetHeader = response.headers.get('x-ratelimit-reset')
     const resetAt = resetHeader ? new Date(Number(resetHeader) * 1000) : new Date(Date.now() + 60 * 60 * 1000)
@@ -53,8 +71,8 @@ async function fetchUser(login: string): Promise<GithubUser> {
 }
 
 // Sorted oldest-first so a 200-repo cap always preserves the start of the
-// account's history — the whole point of a "since the beginning" rewind —
-// even if it means the most recent repos are the ones left out for
+// account's history, which is the whole point of a "since the beginning"
+// rewind, even if it means the most recent repos are the ones left out for
 // accounts with more than 200 public repositories.
 async function fetchRepos(login: string): Promise<GithubRepo[]> {
   const repos: GithubRepo[] = []

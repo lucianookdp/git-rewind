@@ -6,12 +6,24 @@ const INK = '#0b0b12'
 const PAPER = '#f3efe7'
 const SMOKE = '#8d899b'
 
+const IMAGE_LOAD_TIMEOUT_MS = 5000
+
+// Bounded so a slow or blocked avatar request (flaky network, an ad
+// blocker, GitHub's CDN having a bad moment) can never leave the share
+// card, and its buttons, waiting forever.
 async function loadImage(url: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const image = new Image()
     image.crossOrigin = 'anonymous'
-    image.onload = () => resolve(image)
-    image.onerror = reject
+    const timeoutId = window.setTimeout(() => reject(new Error('Image load timed out')), IMAGE_LOAD_TIMEOUT_MS)
+    image.onload = () => {
+      window.clearTimeout(timeoutId)
+      resolve(image)
+    }
+    image.onerror = () => {
+      window.clearTimeout(timeoutId)
+      reject(new Error('Image failed to load'))
+    }
     image.src = url
   })
 }
